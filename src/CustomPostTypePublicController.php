@@ -2,10 +2,9 @@
 
 namespace WonderWp\Component\CPT;
 
-use WonderWp\Framework\AbstractPlugin\AbstractPluginFrontendController;
-use WonderWp\Framework\HttpFoundation\Request;
-use WonderWp\Framework\Repository\PostRepository;
-use WonderWp\Framework\Service\ServiceInterface;
+use WonderWp\Component\PluginSkeleton\Controller\AbstractPluginFrontendController;
+use WonderWp\Component\Repository\PostRepository;
+use WonderWp\Component\Service\ServiceInterface;
 
 class CustomPostTypePublicController extends AbstractPluginFrontendController
 {
@@ -38,7 +37,7 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
 
     public function listAction(array $attributes = [])
     {
-        $request = Request::getInstance();
+        $request = $this->request;
         $page    = (int)$request->get('pageno', 1);
         $perPage = $this->manager->getConfig('per_page', 10);
 
