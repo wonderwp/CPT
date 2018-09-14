@@ -1,6 +1,6 @@
 <?php
 
-namespace WonderWp\Framework\CPT;
+namespace WonderWp\Component\CPT;
 
 use WonderWp\Framework\AbstractPlugin\AbstractPluginFrontendController;
 use WonderWp\Framework\HttpFoundation\Request;
