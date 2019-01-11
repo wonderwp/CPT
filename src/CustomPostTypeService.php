@@ -2,20 +2,25 @@
 
 namespace WonderWp\Component\CPT;
 
+use WonderWp\Component\PluginSkeleton\AbstractManager;
+use WonderWp\Component\Repository\PostRepository;
 use WonderWp\Component\Service\AbstractService;
+use WonderWp\Component\Service\ServiceInterface;
 
 class CustomPostTypeService extends AbstractService
 {
     /** @var CustomPostType */
     protected $customPostType;
-
+    
     /**
      * CustomPostTypeService constructor.
      *
-     * @param CustomPostType $customPostType
+     * @param CustomPostType|null  $customPostType
+     * @param AbstractManager|null $manager
      */
-    public function __construct(CustomPostType $customPostType = null)
+    public function __construct(CustomPostType $customPostType = null, AbstractManager $manager = null)
     {
+        parent::__construct($manager);
         $this->customPostType = $customPostType;
     }
 
@@ -43,9 +48,39 @@ class CustomPostTypeService extends AbstractService
      * Register shorthand method
      * @return $this
      */
-    public function register(){
+    public function register()
+    {
         $this->customPostType->register();
 
         return $this;
+    }
+
+    /**
+     * Call this method in the cpt hook service to add the cpt entries to the sitemap
+     * @example
+     * $cptService = $this->manager->getService(ServiceInterface::CUSTOM_POST_TYPE_SERVICE_NAME);
+     * add_filter('wwp.htmlsitemap.content', [$cptService, 'addToSitemap']);
+     *
+     * @param string $sitemap
+     *
+     * @return string
+     */
+    public function addToSitemap($sitemap)
+    {
+        /** @var PostRepository $repo */
+        $repo = $this->manager->getService(ServiceInterface::REPOSITORY_SERVICE_NAME);
+        if (!empty($repo)) {
+            $posts = $repo->findAll();
+            if (!empty($posts)) {
+                $sitemap .= '<li><a href="#">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a><ul>';
+                foreach ($posts as $post) {
+                    $post->filter = 'sample';
+                    $sitemap      .= ' <li><a href = "' . get_permalink($post) . '" > ' . $post->post_title . '</a></li> ';
+                }
+                $sitemap .= '</ul></li> ';
+            }
+        }
+
+        return $sitemap;
     }
 }
