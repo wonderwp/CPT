@@ -11,7 +11,7 @@ class CustomPostTypeService extends AbstractService
 {
     /** @var CustomPostType */
     protected $customPostType;
-    
+
     /**
      * CustomPostTypeService constructor.
      *
@@ -72,12 +72,22 @@ class CustomPostTypeService extends AbstractService
         if (!empty($repo)) {
             $posts = $repo->findAll();
             if (!empty($posts)) {
-                $sitemap .= '<li><a href="#">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a><ul>';
+                $cptSlug                = sanitize_title($this->customPostType->getName());
+                $mainWrapCssClasses     = [
+                    'sitemap-' . $cptSlug . '-wrap',
+                ];
+                $childrenWrapCssClasses = [
+                    'children',
+                ];
+                $sitemap                .= '<li class="' . implode(' ', apply_filters($cptSlug . '.sitemap.mainwrap.cssclasses', $mainWrapCssClasses, $this->customPostType->getName())) . '">
+                    <a href="#">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a>
+                    <ul class="' . apply_filters($cptSlug . '.sitemap.childrenwrap.cssclasses', implode(' ', $childrenWrapCssClasses), $this->customPostType->getName()) . '">';
                 foreach ($posts as $post) {
                     $post->filter = 'sample';
                     $sitemap      .= ' <li><a href = "' . get_permalink($post) . '" > ' . $post->post_title . '</a></li> ';
                 }
-                $sitemap .= '</ul></li> ';
+                $sitemap .= '</ul>
+                </li> ';
             }
         }
 
