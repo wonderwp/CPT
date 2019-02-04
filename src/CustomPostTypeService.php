@@ -93,4 +93,17 @@ class CustomPostTypeService extends AbstractService
 
         return $sitemap;
     }
+
+    /**
+     * Call this method in the cpt hok service to fix the cpt dashboard url
+     * @param string $computedUrl , the original url
+     *
+     * @return string , the new url
+     */
+    public function fixCptDashboardUrl($computedUrl)
+    {
+        $computedUrl = admin_url('edit.php?post_type='.$this->customPostType->getName());
+
+        return $computedUrl;
+    }
 }
