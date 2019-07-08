@@ -30,11 +30,19 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
         return $this;
     }
 
+    /** @inheritdoc */
     public function defaultAction(array $attributes = [])
     {
         return $this->listAction($attributes);
     }
 
+    /**
+     * Default List action
+     * @param array $attributes
+     *
+     * @return string
+     * @throws \WonderWp\Component\PluginSkeleton\Exception\ViewNotFoundException
+     */
     public function listAction(array $attributes = [])
     {
         $request = $this->request;
@@ -62,5 +70,25 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
     protected function filterViewParams($viewParams)
     {
         return $viewParams;
+    }
+
+    /**
+     * Default Detail View
+     * @param array $attributes
+     *
+     * @return string
+     * @throws \WonderWp\Component\PluginSkeleton\Exception\ViewNotFoundException
+     */
+    public function detailAction(array $attributes)
+    {
+        global $post;
+
+        $view = !empty($attributes['vue']) ? $attributes['vue'] : 'detail';
+
+        $viewParams = [
+            'post' => $post,
+        ];
+
+        return $this->renderView($view, $viewParams);
     }
 }
