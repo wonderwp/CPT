@@ -2,6 +2,7 @@
 
 namespace WonderWp\Component\CPT;
 
+use WonderWp\Component\HttpFoundation\Result;
 use function WonderWp\Functions\array_merge_recursive_distinct;
 
 class CustomPostType
@@ -14,6 +15,8 @@ class CustomPostType
     protected $taxonomy_name;
     /** @var array */
     protected $taxonomy_opts;
+    /** @var array */
+    protected $metaDefinitions;
 
     public function __construct($name = '', array $passed_opts = [], $taxonomy_name = '', array $passed_taxonomy_opts = [])
     {
@@ -105,6 +108,26 @@ class CustomPostType
         return $this;
     }
 
+    /**
+     * @return array
+     */
+    public function getMetaDefinitions()
+    {
+        return $this->metaDefinitions;
+    }
+
+    /**
+     * @param array $metaDefinitions
+     *
+     * @return static
+     */
+    public function setMetaDefinitions(array $metaDefinitions)
+    {
+        $this->metaDefinitions = $metaDefinitions;
+
+        return $this;
+    }
+
     public static function getDefaultName()
     {
         return '';
@@ -133,22 +156,44 @@ class CustomPostType
 
     public function register()
     {
+        $resCode = 200;
+        $resData = [];
         if (!empty($this->getName())) {
-            $this->registerCustomPostType();
+            $cptRegistrationRes = $this->registerCustomPostType();
+            if ($cptRegistrationRes->getCode() !== 200) {
+                $resCode = $cptRegistrationRes->getCode();
+            }
+            $resData = array_merge($resData, $cptRegistrationRes->getData());
         }
         if (!empty($this->getTaxonomyName())) {
-            $this->registerCustomPostTypeTaxonomy();
+            $taxonomyRegistrationRes = $this->registerCustomPostTypeTaxonomy();
+            if ($taxonomyRegistrationRes->getCode() !== 200) {
+                $resCode = $taxonomyRegistrationRes->getCode();
+            }
+            $resData = array_merge($resData, $taxonomyRegistrationRes->getData());
         }
+
+        return new Result($resCode, $resData);
     }
 
+    /**
+     * @return Result
+     */
     protected function registerCustomPostType()
     {
-        register_post_type($this->getName(), $this->getOpts());
+        $wpRes = register_post_type($this->getName(), $this->getOpts());
+
+        return new Result($wpRes instanceof \WP_Error ? 500 : 200, ['wp_res' => $wpRes]);
     }
 
+    /**
+     * @return Result
+     */
     protected function registerCustomPostTypeTaxonomy()
     {
-        register_taxonomy($this->getTaxonomyName(), [$this->getName()], $this->getTaxonomyOpts());
+        $wpRes = register_taxonomy($this->getTaxonomyName(), [$this->getName()], $this->getTaxonomyOpts());
+
+        return new Result($wpRes instanceof \WP_Error ? 500 : 200, ['wp_res' => $wpRes]);
     }
 
 }
