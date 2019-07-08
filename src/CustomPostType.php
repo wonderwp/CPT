@@ -14,6 +14,8 @@ class CustomPostType
     protected $taxonomy_name;
     /** @var array */
     protected $taxonomy_opts;
+    /** @var array */
+    protected $metaDefinitions;
 
     public function __construct($name = '', array $passed_opts = [], $taxonomy_name = '', array $passed_taxonomy_opts = [])
     {
@@ -101,6 +103,26 @@ class CustomPostType
     public function setTaxonomyOpts($taxonomy_opts)
     {
         $this->taxonomy_opts = $taxonomy_opts;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMetaDefinitions()
+    {
+        return $this->metaDefinitions;
+    }
+
+    /**
+     * @param array $metaDefinitions
+     *
+     * @return static
+     */
+    public function setMetaDefinitions(array $metaDefinitions)
+    {
+        $this->metaDefinitions = $metaDefinitions;
 
         return $this;
     }
