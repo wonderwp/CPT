@@ -79,7 +79,7 @@ class CustomPostTypeService extends AbstractService
                     'children',
                 ];
                 $sitemap                .= '<li class="' . implode(' ', apply_filters($cptSlug . '.sitemap.mainwrap.cssclasses', $mainWrapCssClasses, $this->customPostType->getName())) . '">
-                    <a href="#">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a>
+                    <a href="'.apply_filters($cptSlug . '.sitemap.cpt.parentpage.href','#').'">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a>
                     <ul class="' . apply_filters($cptSlug . '.sitemap.childrenwrap.cssclasses', implode(' ', $childrenWrapCssClasses), $this->customPostType->getName()) . '">';
                 foreach ($posts as $post) {
                     $post->filter = 'sample';
