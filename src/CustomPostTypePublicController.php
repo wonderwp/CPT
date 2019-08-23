@@ -38,6 +38,7 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
 
     /**
      * Default List action
+     *
      * @param array $attributes
      *
      * @return string
@@ -74,6 +75,7 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
 
     /**
      * Default Detail View
+     *
      * @param array $attributes
      *
      * @return string
@@ -81,7 +83,11 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
      */
     public function detailAction(array $attributes)
     {
-        global $post;
+        if (!empty($attributes['post'])) {
+            $post = get_post($attributes['post']);
+        } else {
+            global $post;
+        }
 
         $view = !empty($attributes['vue']) ? $attributes['vue'] : 'detail';
 
