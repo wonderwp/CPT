@@ -3,6 +3,8 @@
 namespace WonderWp\Component\CPT;
 
 use WonderWp\Component\DependencyInjection\Container;
+use WonderWp\Component\Form\Field\FieldInterface;
+use WonderWp\Component\Form\FormInterface;
 use WonderWp\Component\PluginSkeleton\AbstractManager;
 use WonderWp\Component\Repository\PostRepository;
 use WonderWp\Component\Service\AbstractService;
@@ -56,13 +58,14 @@ class CustomPostTypeService extends AbstractService
 
     /**
      * Call this method in the cpt hook service to add the cpt entries to the sitemap
-     * @example
-     * $cptService = $this->manager->getService(ServiceInterface::CUSTOM_POST_TYPE_SERVICE_NAME);
-     * add_filter('wwp.htmlsitemap.content', [$cptService, 'addToSitemap']);
      *
      * @param string $sitemap
      *
      * @return string
+     * @example
+     * $cptService = $this->manager->getService(ServiceInterface::CUSTOM_POST_TYPE_SERVICE_NAME);
+     * add_filter('wwp.htmlsitemap.content', [$cptService, 'addToSitemap']);
+     *
      */
     public function addToSitemap($sitemap)
     {
@@ -79,7 +82,7 @@ class CustomPostTypeService extends AbstractService
                     'children',
                 ];
                 $sitemap                .= '<li class="' . implode(' ', apply_filters($cptSlug . '.sitemap.mainwrap.cssclasses', $mainWrapCssClasses, $this->customPostType->getName())) . '">
-                    <a href="'.apply_filters($cptSlug . '.sitemap.cpt.parentpage.href','#').'">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a>
+                    <a href="' . apply_filters($cptSlug . '.sitemap.cpt.parentpage.href', '#') . '">' . trad($this->customPostType->getName(), $this->manager->getConfig('textDomain')) . '</a>
                     <ul class="' . apply_filters($cptSlug . '.sitemap.childrenwrap.cssclasses', implode(' ', $childrenWrapCssClasses), $this->customPostType->getName()) . '">';
                 foreach ($posts as $post) {
                     $post->filter = 'sample';
@@ -129,27 +132,57 @@ class CustomPostTypeService extends AbstractService
      */
     public function displayCptsMetaBox(\WP_Post $post)
     {
-        $metasDefinition = $this->customPostType->getMetaDefinitions();
-        if (!empty($metasDefinition)) {
-            $container = Container::getInstance();
-            /** @var Form $form */
-            $form        = $container['wwp.form.form'];
-            $metasValues = !empty($post->ID) ? get_post_meta($post->ID) : [];
-
-            foreach ($metasDefinition as $metaKey => $metaDef) {
-                $inputType       = $metaDef[0];
-                $savedMetaValue  = !empty($metasValues[$metaKey]) ? reset($metasValues[$metaKey]) : (!empty($metaDef[1]) ? $metaDef[1] : null);
-                $displayRules    = !empty($metaDef[2]) ? $metaDef[2] : [];
-                $validationRules = !empty($metaDef[3]) ? $metaDef[3] : [];
-                $f               = new $inputType($metaKey, $savedMetaValue, $displayRules, $validationRules);
-                $form->addField($f);
-            }
-
-            echo $form->renderView([
+        $metaBoxForm = $this->computeCptsMetaBox($post);
+        if (!empty($metaBoxForm->getFields())) {
+            echo $metaBoxForm->renderView([
                 'formStart' => ['showFormTag' => false],
                 'formEnd'   => ['showFormTag' => false, 'showSubmit' => false],
             ]);
         }
+    }
+
+    /**
+     * @param \WP_Post $post
+     *
+     * @return FormInterface
+     */
+    public function computeCptsMetaBox(\WP_Post $post)
+    {
+        $container = Container::getInstance();
+        /** @var FormInterface $form */
+        $form            = $container['wwp.form.form'];
+        $metasDefinition = $this->customPostType->getMetaDefinitions();
+
+        if (!empty($metasDefinition)) {
+            $metasValues = !empty($post->ID) ? get_post_meta($post->ID) : [];
+
+            foreach ($metasDefinition as $metaKey => $metaDef) {
+                $savedMetaValue = !empty($metasValues[$metaKey]) ? reset($metasValues[$metaKey]) : (!empty($metaDef[1]) ? $metaDef[1] : null);
+                if(is_serialized($savedMetaValue)){
+                    $savedMetaValue = unserialize($savedMetaValue);
+                }
+                $field          = $this->createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue);
+                $form->addField($field);
+            }
+        }
+
+        return $form;
+    }
+
+    /**
+     * @param string $metaKey
+     * @param array  $metaDef
+     * @param mixed  $savedMetaValue
+     *
+     * @return FieldInterface
+     */
+    public function createFieldFromMetaDefinition($metaKey, array $metaDef, $savedMetaValue)
+    {
+        $inputType       = $metaDef[0];
+        $displayRules    = !empty($metaDef[2]) ? $metaDef[2] : [];
+        $validationRules = !empty($metaDef[3]) ? $metaDef[3] : [];
+
+        return new $inputType($metaKey, $savedMetaValue, $displayRules, $validationRules);
     }
 
     /**
