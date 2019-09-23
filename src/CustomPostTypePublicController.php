@@ -3,6 +3,7 @@
 namespace WonderWp\Component\CPT;
 
 use WonderWp\Component\PluginSkeleton\Controller\AbstractPluginFrontendController;
+use WonderWp\Component\PluginSkeleton\Exception\ServiceNotFoundException;
 use WonderWp\Component\Repository\PostRepository;
 use WonderWp\Component\Service\ServiceInterface;
 
@@ -50,8 +51,12 @@ class CustomPostTypePublicController extends AbstractPluginFrontendController
         $page    = (int)$request->get('pageno', 1);
         $perPage = $this->manager->getConfig('per_page', 10);
 
-        $filterService = $this->manager->getService('filters');
-        $criterias     = !empty($filterService) ? $filterService->prepareCriterias($request->request->all(), $attributes) : [];
+        try {
+            $filterService = $this->manager->getService('filters');
+            $criterias     = !empty($filterService) ? $filterService->prepareCriterias($request->request->all(), $attributes) : [];
+        } catch (ServiceNotFoundException $e) {
+            $criterias = [];
+        }
 
         /** @var PostRepository $repository */
         $repository = $this->manager->getService(ServiceInterface::REPOSITORY_SERVICE_NAME);
