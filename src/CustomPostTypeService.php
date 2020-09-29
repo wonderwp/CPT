@@ -3,6 +3,7 @@
 namespace WonderWp\Component\CPT;
 
 use WonderWp\Component\DependencyInjection\Container;
+use WonderWp\Component\Form\Field\BooleanField;
 use WonderWp\Component\Form\Field\FieldInterface;
 use WonderWp\Component\Form\FormInterface;
 use WonderWp\Component\PluginSkeleton\AbstractManager;
@@ -204,6 +205,10 @@ class CustomPostTypeService extends AbstractService
                 foreach ($metasDefinition as $metaKey => $metaDef) {
                     if (isset($_POST[$metaKey])) {
                         update_post_meta($post_id, $metaKey, $_POST[$metaKey]);
+                    } else {
+                        if($metaDef[0]===BooleanField::class){
+                            update_post_meta($post_id, $metaKey, 0);
+                        }
                     }
                 }
             }
