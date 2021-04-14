@@ -191,9 +191,19 @@ class CustomPostType
      */
     protected function registerCustomPostTypeTaxonomy()
     {
-        $wpRes = register_taxonomy($this->getTaxonomyName(), [$this->getName()], $this->getTaxonomyOpts());
+        $wpRes = false;
 
-        return new Result($wpRes instanceof \WP_Error ? 500 : 200, ['wp_res' => $wpRes]);
+        if (taxonomy_exists($this->getTaxonomyName())) {
+            $result = register_taxonomy_for_object_type($this->getTaxonomyName(), $this->getName());
+
+            if ($result) {
+                $wpRes = get_taxonomy($this->getTaxonomyName());
+            }
+        } else {
+            $wpRes = register_taxonomy($this->getTaxonomyName(), [$this->getName()], $this->getTaxonomyOpts());
+        }
+
+        return new Result($wpRes instanceof \WP_Error || $wpRes === false ? 500 : 200, ['wp_res' => $wpRes]);
     }
 
 }
