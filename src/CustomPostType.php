@@ -181,9 +181,39 @@ class CustomPostType
      */
     protected function registerCustomPostType()
     {
-        $wpRes = register_post_type($this->getName(), $this->getOpts());
+        $cptOpts = $this->getOpts();
+        if (!empty($cptOpts['rewrite']) && !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs'])) {
+            $slugs = $cptOpts['rewrite']['slugs'];
+            unset($cptOpts['rewrite']['slugs']);
+            $slugRewriteRules = $this->computeAdditionalSlugsRewriteRules($slugs);
+            $this->registerAdditionalRewriteRules($slugRewriteRules, 'top');
+        }
+
+        $wpRes = register_post_type($this->getName(), $cptOpts);
 
         return new Result($wpRes instanceof \WP_Error ? 500 : 200, ['wp_res' => $wpRes]);
+    }
+
+    protected function computeAdditionalSlugsRewriteRules($slugs)
+    {
+        $rules = [];
+        if (empty($slugs)) {
+            return $rules;
+        }
+        foreach ($slugs as $slug) {
+            $rules[$slug . '/([^/]+)/page/?([0-9]{1,})/?$'] = 'index.php?' . $this->name . '=$matches[1]&paged=$matches[2]';
+            $rules[$slug . '/([^/]+)(?:/([0-9]+))?/?$']     = 'index.php?' . $this->name . '=$matches[1]&page=$matches[2]';
+        }
+        return $rules;
+    }
+
+    protected function registerAdditionalRewriteRules(array $rewriteRules, $after = 'bottom')
+    {
+        if (!empty($rewriteRules)) {
+            foreach ($rewriteRules as $ruleCondition => $ruleDestination) {
+                add_rewrite_rule($ruleCondition, $ruleDestination, $after);
+            }
+        }
     }
 
     /**
