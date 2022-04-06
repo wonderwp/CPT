@@ -163,7 +163,9 @@ class CustomPostTypeService extends AbstractService
                     $savedMetaValue = unserialize($savedMetaValue);
                 }
                 $field = $this->createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue);
-                $form->addField($field);
+                if($field instanceof FieldInterface) {
+                    $form->addField($field);
+                }
             }
         }
 
@@ -175,7 +177,7 @@ class CustomPostTypeService extends AbstractService
      * @param array|callable $metaDef
      * @param mixed $savedMetaValue
      *
-     * @return FieldInterface
+     * @return FieldInterface|null
      */
     public function createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue)
     {
