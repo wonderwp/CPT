@@ -19,7 +19,7 @@ class CustomPostTypeService extends AbstractService
     /**
      * CustomPostTypeService constructor.
      *
-     * @param CustomPostType|null  $customPostType
+     * @param CustomPostType|null $customPostType
      * @param AbstractManager|null $manager
      */
     public function __construct(CustomPostType $customPostType = null, AbstractManager $manager = null)
@@ -159,10 +159,10 @@ class CustomPostTypeService extends AbstractService
 
             foreach ($metasDefinition as $metaKey => $metaDef) {
                 $savedMetaValue = !empty($metasValues[$metaKey]) ? reset($metasValues[$metaKey]) : (!empty($metaDef[1]) ? $metaDef[1] : null);
-                if(is_serialized($savedMetaValue)){
+                if (is_serialized($savedMetaValue)) {
                     $savedMetaValue = unserialize($savedMetaValue);
                 }
-                $field          = $this->createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue);
+                $field = $this->createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue);
                 $form->addField($field);
             }
         }
@@ -172,13 +172,17 @@ class CustomPostTypeService extends AbstractService
 
     /**
      * @param string $metaKey
-     * @param array  $metaDef
-     * @param mixed  $savedMetaValue
+     * @param array|callable $metaDef
+     * @param mixed $savedMetaValue
      *
      * @return FieldInterface
      */
-    public function createFieldFromMetaDefinition($metaKey, array $metaDef, $savedMetaValue)
+    public function createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue)
     {
+        if(is_callable($metaDef)){
+            return call_user_func($metaDef,$metaKey,$savedMetaValue);
+        }
+        
         $inputType       = $metaDef[0];
         $displayRules    = !empty($metaDef[2]) ? $metaDef[2] : [];
         $validationRules = !empty($metaDef[3]) ? $metaDef[3] : [];
@@ -206,7 +210,7 @@ class CustomPostTypeService extends AbstractService
                     if (isset($_POST[$metaKey])) {
                         update_post_meta($post_id, $metaKey, $_POST[$metaKey]);
                     } else {
-                        if($metaDef[0]===BooleanField::class){
+                        if ($metaDef[0] === BooleanField::class) {
                             update_post_meta($post_id, $metaKey, 0);
                         }
                     }
