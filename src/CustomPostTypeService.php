@@ -73,9 +73,10 @@ class CustomPostTypeService extends AbstractService
         /** @var PostRepository $repo */
         $repo = $this->manager->getService(ServiceInterface::REPOSITORY_SERVICE_NAME);
         if (!empty($repo)) {
-            $posts = $repo->findAll();
+            $cptSlug    = sanitize_title($this->customPostType->getName());
+            $methodName = apply_filters($cptSlug . '.sitemap.repoMethodName', 'findAll');
+            $posts      = $repo->$methodName();
             if (!empty($posts)) {
-                $cptSlug                = sanitize_title($this->customPostType->getName());
                 $mainWrapCssClasses     = [
                     'sitemap-' . $cptSlug . '-wrap',
                 ];
@@ -163,7 +164,7 @@ class CustomPostTypeService extends AbstractService
                     $savedMetaValue = unserialize($savedMetaValue);
                 }
                 $field = $this->createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue);
-                if($field instanceof FieldInterface) {
+                if ($field instanceof FieldInterface) {
                     $form->addField($field);
                 }
             }
@@ -181,10 +182,10 @@ class CustomPostTypeService extends AbstractService
      */
     public function createFieldFromMetaDefinition($metaKey, $metaDef, $savedMetaValue)
     {
-        if(is_callable($metaDef)){
-            return call_user_func($metaDef,$metaKey,$savedMetaValue);
+        if (is_callable($metaDef)) {
+            return call_user_func($metaDef, $metaKey, $savedMetaValue);
         }
-        
+
         $inputType       = $metaDef[0];
         $displayRules    = !empty($metaDef[2]) ? $metaDef[2] : [];
         $validationRules = !empty($metaDef[3]) ? $metaDef[3] : [];
