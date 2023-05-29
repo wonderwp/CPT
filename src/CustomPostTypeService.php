@@ -221,4 +221,32 @@ class CustomPostTypeService extends AbstractService
             }
         }
     }
+
+    public function makeMetasAvailableInRestApi()
+    {
+        //retrieve cpt metas definitions
+        $metasDefinitions = $this->getCustomPostType()->getMetaDefinitions();
+        if (!empty($metasDefinitions)) {
+            //foreach meta definition, register the meta towards the rest api
+            $cptName        = $this->getCustomPostType()->getName();
+            $opts           = $this->getCustomPostType()->getOpts();
+            $authCapability = !empty($opts['capabilities']['edit_post']) ? $opts['capabilities']['edit_post'] : 'edit_posts';
+            foreach ($metasDefinitions as $metaName => $metaDefinition) {
+                $metaArgs = [
+                    'show_in_rest'      => true,
+                    'single'            => true,
+                    'type'              => 'string',
+                    'auth_callback'     => function () use ($authCapability) {
+                        return current_user_can($authCapability);
+                    },
+                    'sanitize_callback' => 'sanitize_text_field',
+                ];
+                $registered = register_post_meta(
+                    $cptName,
+                    $metaName,
+                    apply_filters('cpt.' . $cptName . '.register_post_meta.' . $metaName, $metaArgs)
+                );
+            }
+        }
+    }
 }
