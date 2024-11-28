@@ -7,6 +7,10 @@ use WonderWp\Component\PluginSkeleton\Exception\ServiceNotFoundException;
 use WonderWp\Component\Repository\PostRepository;
 use WonderWp\Component\Service\ServiceInterface;
 
+/**
+ * @deprecated
+ * Will be removed in next major version because it's too opinionated
+ */
 class CustomPostTypePublicController extends AbstractPluginFrontendController
 {
     protected $customPostType;
