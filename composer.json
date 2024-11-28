@@ -17,7 +17,7 @@
   ],
   "require": {
     "php": ">=8.0",
-    "wonderwp/response": "dev-feature/response_definition"
+    "wonderwp/response": "dev-feature/php8"
   },
   "require-dev": {
     "johnpbloch/wordpress": "^6.0"
