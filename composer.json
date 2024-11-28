@@ -1,6 +1,6 @@
 {
   "name": "wonderwp/customposttype",
-  "description": "WonderWp CPT Component",
+  "description": "WonderWp Custom Post Types Component",
   "type": "library",
   "keywords": ["custom post type", "CPT", "WonderWp", "WordPress"],
   "homepage": "https://github.com/wonderwp/CPT",
@@ -16,7 +16,8 @@
     }
   ],
   "require": {
-    "php": ">=8.0"
+    "php": ">=8.0",
+    "wonderwp/response": "dev-feature/response_definition"
   },
   "require-dev": {
     "johnpbloch/wordpress": "^6.0"

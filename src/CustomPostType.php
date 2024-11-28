@@ -2,74 +2,135 @@
 
 namespace WonderWp\Component\CPT;
 
+use WonderWp\Component\CPT\Definition\AbstractCustomPostType;
+use WonderWp\Component\CPT\Definition\CustomPostTypeInterface;
+use WonderWp\Component\CPT\Exception\CustomPostTypeRegistrationException;
+use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponse;
+use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponseInterface;
 use WonderWp\Component\HttpFoundation\Result;
 use function WonderWp\Functions\array_merge_recursive_distinct;
 
-class CustomPostType
+/**
+ * @deprecated Use \WonderWp\Component\CPT\Definition\CustomPostType instead
+ */
+class CustomPostType extends AbstractCustomPostType
 {
-    /** @var string */
-    protected $name;
-    /** @var array */
-    protected $opts;
-    /** @var string */
-    protected $taxonomy_name;
-    /** @var array */
-    protected $taxonomy_opts;
-    /** @var array */
-    protected $metaDefinitions;
+    /** @deprecated This is a mix of concerns and will be moved to a more appropriate place in the futur */
+    protected string $taxonomy_name;
+    /** @deprecated This is a mix of concerns and will be moved to a more appropriate place in the futur */
+    protected array $taxonomy_opts;
+    /** @deprecated This is a mix of concerns and will be moved to a more appropriate place in the futur */
+    protected array $metaDefinitions;
 
-    public function __construct($name = '', array $passed_opts = [], $taxonomy_name = '', array $passed_taxonomy_opts = [])
+    public function __construct($name = '', array $passedArgs = [], $taxonomyName = '', array $passedTaxonomyArgs = [])
     {
-        $defaultOpts         = static::getDefaultOpts();
+        $defaultArgs = static::getDefaultArgs();
+        $name = !empty($name) ? $name : static::getDefaultKey();
+        $args = array_merge_recursive_distinct($defaultArgs, $passedArgs);
+        parent::__construct($name, $args);
+
         $defaultTaxonomyOpts = static::getDefaultTaxonomyOpts();
-        $this->name          = !empty($name) ? $name : static::getDefaultName();
-        $this->opts          = array_merge_recursive_distinct($defaultOpts, $passed_opts);
-        $this->taxonomy_name = !empty($taxonomy_name) ? $taxonomy_name : static::getDefaultTaxonomyName();
-        $this->taxonomy_opts = array_merge_recursive_distinct($defaultTaxonomyOpts, $passed_taxonomy_opts);
+        $this->taxonomy_name = !empty($taxonomyName) ? $taxonomyName : static::getDefaultTaxonomyName();
+        $this->taxonomy_opts = array_merge_recursive_distinct($defaultTaxonomyOpts, $passedTaxonomyArgs);
     }
+
+    public static function getDefaultKey()
+    {
+        return '';
+    }
+
+    public static function getDefaultArgs(): array
+    {
+        return [
+            'public' => true,
+            'hierarchical' => false,
+            'show_in_admin_bar' => false,
+            'exclude_from_search' => true,
+            'supports' => ['title', 'editor', 'thumbnail', 'excerpt'],
+        ];
+    }
+
+    //===========================================================//
+    // Deprecated methods //
+    //===========================================================//
 
     /**
      * @return string
+     * @deprecated Use getKey() instead
      */
     public function getName()
     {
-        return $this->name;
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use getKey() instead.', E_USER_DEPRECATED);
+        return $this->getKey();
     }
 
     /**
      * @param string $name
-     *
      * @return static
+     * @deprecated Use setKey() instead
      */
     public function setName($name)
     {
-        $this->name = $name;
-
-        return $this;
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use setKey() instead.', E_USER_DEPRECATED);
+        return $this->setKey($name);
     }
 
     /**
      * @return array
+     * @deprecated Use getArgs() instead
      */
     public function getOpts()
     {
-        return $this->opts;
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use getArgs() instead.', E_USER_DEPRECATED);
+        return $this->getArgs();
     }
 
     /**
      * @param array $opts
-     *
      * @return static
+     * @deprecated Use setArgs() instead
      */
     public function setOpts($opts)
     {
-        $this->opts = $opts;
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use setArgs() instead.', E_USER_DEPRECATED);
+        return $this->setArgs($opts);
+    }
 
-        return $this;
+
+    /**
+     * @deprecated Use getDefaultKey() instead
+     */
+    public static function getDefaultName()
+    {
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use getDefaultKey() instead.', E_USER_DEPRECATED);
+        return static::getDefaultKey();
     }
 
     /**
+     * @deprecated Use getDefaultArgs() instead
+     */
+    public static function getDefaultOpts(): array
+    {
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. Use getDefaultArgs() instead.', E_USER_DEPRECATED);
+        return static::getDefaultArgs();
+    }
+
+    /**
+     * @deprecated CustomPostTypes should not register themselves. Use a CustomPostTypeService instead.
+     */
+    public function register()
+    {
+        trigger_error('Method ' . __METHOD__ . ' is deprecated. CustomPostTypes should not register themselves. Use a CustomPostTypeService instead.', E_USER_DEPRECATED);
+    }
+
+
+    //===========================================================//
+    // Methods that should move at some point //
+    //===========================================================//
+
+    /**
      * @return string
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
      */
     public function getTaxonomyName()
     {
@@ -80,6 +141,7 @@ class CustomPostType
      * @param string $taxonomy_name
      *
      * @return static
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
      */
     public function setTaxonomyName($taxonomy_name)
     {
@@ -90,6 +152,7 @@ class CustomPostType
 
     /**
      * @return array
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
      */
     public function getTaxonomyOpts()
     {
@@ -98,8 +161,9 @@ class CustomPostType
 
     /**
      * @param array $taxonomy_opts
-     *
      * @return static
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
+     *
      */
     public function setTaxonomyOpts($taxonomy_opts)
     {
@@ -109,7 +173,26 @@ class CustomPostType
     }
 
     /**
+     * @return string
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
+     */
+    public static function getDefaultTaxonomyName()
+    {
+        return '';
+    }
+
+    /**
      * @return array
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
+     */
+    public static function getDefaultTaxonomyOpts()
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
      */
     public function getMetaDefinitions()
     {
@@ -118,122 +201,15 @@ class CustomPostType
 
     /**
      * @param array $metaDefinitions
-     *
      * @return static
+     * @deprecated This is a mix of concerns and will be moved to a more appropriate place in the future
+     *
      */
     public function setMetaDefinitions(array $metaDefinitions)
     {
         $this->metaDefinitions = $metaDefinitions;
 
         return $this;
-    }
-
-    public static function getDefaultName()
-    {
-        return '';
-    }
-
-    public static function getDefaultOpts()
-    {
-        return [
-            'public'              => true,
-            'hierarchical'        => false,
-            'show_in_admin_bar'   => false,
-            'exclude_from_search' => true,
-            'supports'            => ['title', 'editor', 'thumbnail', 'excerpt'],
-        ];
-    }
-
-    public static function getDefaultTaxonomyName()
-    {
-        return '';
-    }
-
-    public static function getDefaultTaxonomyOpts()
-    {
-        return [];
-    }
-
-    public function register()
-    {
-        $resCode = 200;
-        $resData = [];
-        if (!empty($this->getName())) {
-            $cptRegistrationRes = $this->registerCustomPostType();
-            if ($cptRegistrationRes->getCode() !== 200) {
-                $resCode = $cptRegistrationRes->getCode();
-            }
-            $resData = array_merge($resData, $cptRegistrationRes->getData());
-        }
-        if (!empty($this->getTaxonomyName())) {
-            $taxonomyRegistrationRes = $this->registerCustomPostTypeTaxonomy();
-            if ($taxonomyRegistrationRes->getCode() !== 200) {
-                $resCode = $taxonomyRegistrationRes->getCode();
-            }
-            $resData = array_merge($resData, $taxonomyRegistrationRes->getData());
-        }
-
-        return new Result($resCode, $resData);
-    }
-
-    /**
-     * @return Result
-     */
-    protected function registerCustomPostType()
-    {
-        $cptOpts = $this->getOpts();
-        if (!empty($cptOpts['rewrite']) && !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs'])) {
-            $slugs = $cptOpts['rewrite']['slugs'];
-            unset($cptOpts['rewrite']['slugs']);
-            $slugRewriteRules = $this->computeAdditionalSlugsRewriteRules($slugs);
-            $this->registerAdditionalRewriteRules($slugRewriteRules, 'top');
-        }
-
-        $wpRes = register_post_type($this->getName(), $cptOpts);
-
-        return new Result($wpRes instanceof \WP_Error ? 500 : 200, ['wp_res' => $wpRes]);
-    }
-
-    protected function computeAdditionalSlugsRewriteRules($slugs)
-    {
-        $rules = [];
-        if (empty($slugs)) {
-            return $rules;
-        }
-        foreach ($slugs as $slug) {
-            $rules[$slug . '/([^/]+)/page/?([0-9]{1,})/?$'] = 'index.php?' . $this->name . '=$matches[1]&paged=$matches[2]';
-            $rules[$slug . '/([^/]+)(?:/([0-9]+))?/?$']     = 'index.php?' . $this->name . '=$matches[1]&page=$matches[2]';
-        }
-        return $rules;
-    }
-
-    protected function registerAdditionalRewriteRules(array $rewriteRules, $after = 'bottom')
-    {
-        if (!empty($rewriteRules)) {
-            foreach ($rewriteRules as $ruleCondition => $ruleDestination) {
-                add_rewrite_rule($ruleCondition, $ruleDestination, $after);
-            }
-        }
-    }
-
-    /**
-     * @return Result
-     */
-    protected function registerCustomPostTypeTaxonomy()
-    {
-        $wpRes = false;
-
-        if (taxonomy_exists($this->getTaxonomyName())) {
-            $result = register_taxonomy_for_object_type($this->getTaxonomyName(), $this->getName());
-
-            if ($result) {
-                $wpRes = get_taxonomy($this->getTaxonomyName());
-            }
-        } else {
-            $wpRes = register_taxonomy($this->getTaxonomyName(), [$this->getName()], $this->getTaxonomyOpts());
-        }
-
-        return new Result($wpRes instanceof \WP_Error || $wpRes === false ? 500 : 200, ['wp_res' => $wpRes]);
     }
 
 }
