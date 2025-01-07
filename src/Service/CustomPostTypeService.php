@@ -20,7 +20,7 @@ class CustomPostTypeService extends AbstractCustomPostTypeService implements Reg
     public function autoload(array $classNameFromFiles = [], array $discoveryPaths = [], callable $successCallback = null, array $excludedClasses=[]): array
     {
         $discoveryPathsRoots = $this->manager->getConfig('discoveryPathsRoots', [
-            'post-types' => rtrim($this->manager->getConfig('path.root'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR
+            'post-types' => rtrim($this->manager->getConfig('path.root') ?? '', DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR
         ]);
         $discoverFolderSuffix = $this->manager->getConfig('cptservice.discoverFolderSuffix', 'PostTypes');
         $defaultPaths = $this->deductDefaultDiscoveryPaths($discoveryPathsRoots, $discoverFolderSuffix);
