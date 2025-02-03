@@ -102,13 +102,14 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
     protected function computeAdditionalSlugsRewriteRules(CustomPostTypeInterface $customPostType): array
     {
         $rules = [];
+        $cptOpts = $customPostType->getArgs();
         if (empty($cptOpts['rewrite']) || empty($cptOpts['rewrite']['slugs']) || !is_array($cptOpts['rewrite']['slugs'])) {
             return $rules;
         }
         $slugs = $cptOpts['rewrite']['slugs'];
         foreach ($slugs as $slug) {
-            $rules[$slug . '/([^/]+)/page/?([0-9]{1,})/?$'] = 'index.php?' . $this->customPostType->getKey() . '=$matches[1]&paged=$matches[2]';
-            $rules[$slug . '/([^/]+)(?:/([0-9]+))?/?$'] = 'index.php?' . $this->customPostType->getKey() . '=$matches[1]&page=$matches[2]';
+            $rules[$slug . '/([^/]+)/page/?([0-9]{1,})/?$'] = 'index.php?' . $customPostType->getKey() . '=$matches[1]&paged=$matches[2]';
+            $rules[$slug . '/([^/]+)(?:/([0-9]+))?/?$'] = 'index.php?' . $customPostType->getKey() . '=$matches[1]&page=$matches[2]';
         }
         return $rules;
     }
