@@ -38,7 +38,9 @@ class CustomPostTypeService extends AbstractCustomPostTypeService implements Reg
     {
         $instance = parent::autoloadFile($className, $filePath);
 
-        $this->addCustomPostType($instance);
+        if($instance instanceof CustomPostTypeInterface) {
+            $this->addCustomPostType($instance);
+        }
 
         return $instance;
     }
