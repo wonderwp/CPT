@@ -2,6 +2,7 @@
 
 namespace WonderWp\Component\CPT;
 
+use WonderWp\Component\CPT\Definition\CustomPostTypeInterface;
 use WonderWp\Component\DependencyInjection\Container;
 use WonderWp\Component\Form\Field\BooleanField;
 use WonderWp\Component\Form\Field\FieldInterface;
@@ -34,7 +35,7 @@ class CustomPostTypeService extends AbstractCustomPostTypeService
     /**
      * @return CustomPostType
      */
-    public function getCustomPostType()
+    public function getCustomPostType(string $key): ?CustomPostTypeInterface
     {
         return $this->customPostType;
     }
