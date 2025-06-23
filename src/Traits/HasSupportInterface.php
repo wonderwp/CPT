@@ -9,4 +9,5 @@ interface HasSupportInterface
     const THUMBNAIL = 'thumbnail';
     const EXCERPT = 'excerpt';
     const CUSTOM_FIELDS = 'custom-fields';
+    const AUTHOR = 'author';
 }
