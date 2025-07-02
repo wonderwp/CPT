@@ -15,8 +15,10 @@ class CustomPostTypeRegistrationResponse extends AbstractResponse implements Cus
         return $this->wpRegistrationResult;
     }
 
-    public function setWpRegistrationResult(?WP_Post_Type $wpRegistrationResult): void
+    public function setWpRegistrationResult(?WP_Post_Type $wpRegistrationResult): static
     {
         $this->wpRegistrationResult = $wpRegistrationResult;
+
+        return $this;
     }
 }
