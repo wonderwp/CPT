@@ -103,7 +103,9 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
     {
         $rules = [];
         $cptOpts = $customPostType->getArgs();
-        if (empty($cptOpts['rewrite']) || empty($cptOpts['rewrite']['slugs']) || !is_array($cptOpts['rewrite']['slugs'])) {
+        $rewriteSlugs = !empty($cptOpts) && !empty($cptOpts['rewrite']) && !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs']) ? $cptOpts['rewrite']['slugs'] : [];
+        $rewriteSlugs = apply_filters('wonderwp.customposttype.rewrite.slugs', $rewriteSlugs, $customPostType);
+        if (empty($rewriteSlugs)) {
             return $rules;
         }
         $slugs = $cptOpts['rewrite']['slugs'];
