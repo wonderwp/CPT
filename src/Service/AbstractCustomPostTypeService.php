@@ -6,10 +6,16 @@ use WonderWp\Component\CPT\Definition\CustomPostTypeInterface;
 use WonderWp\Component\CPT\Exception\CustomPostTypeRegistrationException;
 use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponse;
 use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponseInterface;
+use WonderWp\Component\Service\Traits\HasAutoloadingCapabilities;
+use WonderWp\Component\CPT\Traits\HasCustomPostTypeAutoloader;
 use WonderWp\Component\Service\AbstractService;
 
 abstract class AbstractCustomPostTypeService extends AbstractService implements CustomPostTypeServiceInterface
 {
+    use HasAutoloadingCapabilities, HasCustomPostTypeAutoloader {
+        HasCustomPostTypeAutoloader::resolveDiscoveryPaths insteadof HasAutoloadingCapabilities;
+        HasCustomPostTypeAutoloader::afterAutoload insteadof HasAutoloadingCapabilities;
+    }
     /** @var CustomPostTypeInterface[] */
     protected $customPostTypes = [];
 
