@@ -38,6 +38,15 @@ namespace WonderWp\Component\PluginSkeleton {
     }
 }
 
+namespace WonderWp\Component\PluginSkeleton\Service {
+    if (!interface_exists(RegistrableInterface::class, false)) {
+        interface RegistrableInterface
+        {
+            public function register();
+        }
+    }
+}
+
 namespace WonderWp\Component\Service {
     if (!interface_exists(ServiceInterface::class, false)) {
         interface ServiceInterface
