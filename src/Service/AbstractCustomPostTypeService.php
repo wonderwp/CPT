@@ -186,17 +186,8 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
             }
 
             foreach ($archiveSlugs as $archiveSlug) {
-                if (!str_starts_with($regex, $archiveSlug . '/')) {
-                    continue;
-                }
-
-                $newRegex = preg_replace(
-                    '#^' . preg_quote($archiveSlug, '#') . '/\(\[\^/\]\+\)(\(\?:/\(\[0-9\]\+\)\)\?/\?\$)$#',
-                    $archiveSlug . '/(?!' . $reservedSlugPattern . ')([^/]+)$1',
-                    $regex
-                );
-
-                if (!is_string($newRegex) || $newRegex === $regex) {
+                $newRegex = $this->injectReservedSlugLookahead($regex, $archiveSlug, $reservedSlugPattern);
+                if ($newRegex === null) {
                     continue;
                 }
 
@@ -207,6 +198,33 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
         }
 
         return $rules;
+    }
+
+    /**
+     * Inject a negative lookahead for reserved archive sub-slugs into a WP single-post rewrite rule.
+     *
+     * @return string|null Patched regex, or null when the rule does not match the expected WP shape.
+     */
+    protected function injectReservedSlugLookahead(
+        string $regex,
+        string $archiveSlug,
+        string $reservedSlugPattern
+    ): ?string {
+        if (!str_starts_with($regex, $archiveSlug . '/')) {
+            return null;
+        }
+
+        $newRegex = preg_replace(
+            '#^' . preg_quote($archiveSlug, '#') . '/\(\[\^/\]\+\)(\(\?:/\(\[0-9\]\+\)\)\?/\?\$)$#',
+            $archiveSlug . '/(?!' . $reservedSlugPattern . ')([^/]+)$1',
+            $regex
+        );
+
+        if (!is_string($newRegex) || $newRegex === $regex) {
+            return null;
+        }
+
+        return $newRegex;
     }
 
     protected function getReservedSlugNegativeLookaheadPattern(CustomPostTypeInterface $customPostType): string
