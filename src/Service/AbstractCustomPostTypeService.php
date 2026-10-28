@@ -95,7 +95,9 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
             $wpRes = register_post_type($customPostType->getKey(), $cptOpts);
 
             if ($wpRes instanceof \WP_Error) {
-                throw new CustomPostTypeRegistrationException($wpRes->get_error_message(), $wpRes->get_error_code());
+                $wpCode = $wpRes->get_error_code();
+                $exceptionCode = is_numeric($wpCode) ? (int) $wpCode : 500;
+                throw new CustomPostTypeRegistrationException($wpRes->get_error_message(), $exceptionCode);
             } else {
                 $response = new CustomPostTypeRegistrationResponse(200, CustomPostTypeRegistrationResponseInterface::SUCCESS);
                 $response->setWpRegistrationResult($wpRes);
@@ -189,7 +191,7 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
                 }
 
                 $newRegex = preg_replace(
-                    '#^' . preg_quote($archiveSlug, '#') . '/\(\[\^/\]\+\)(\(\?:/\(\(\[0-9\]\+\)\)\)\?/?\$)$#',
+                    '#^' . preg_quote($archiveSlug, '#') . '/\(\[\^/\]\+\)(\(\?:/\(\[0-9\]\+\)\)\?/\?\$)$#',
                     $archiveSlug . '/(?!' . $reservedSlugPattern . ')([^/]+)$1',
                     $regex
                 );
