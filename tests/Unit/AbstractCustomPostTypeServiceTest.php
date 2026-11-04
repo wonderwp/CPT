@@ -109,6 +109,35 @@ final class AbstractCustomPostTypeServiceTest extends TestCase
         $this->assertSame($query, $patched[$expectedRegex]);
     }
 
+    public function testPatchSinglePostRewriteRulesPreservesPositionBeforePageCatchall(): void
+    {
+        $service = new TestableCustomPostTypeService();
+        $cpt = new StubCustomPostType('event', [
+            'has_archive' => true,
+            'rewrite' => ['slug' => 'events'],
+        ]);
+
+        $originalRegex = 'events/([^/]+)(?:/([0-9]+))?/?$';
+        $query = 'index.php?event=$matches[1]&page=$matches[2]';
+        $pageCatchall = '(.?.+?)(?:/([0-9]+))?/?$';
+        $pageQuery = 'index.php?pagename=$matches[1]&page=$matches[2]';
+
+        $rules = [
+            'events/?$' => 'index.php?post_type=event',
+            $originalRegex => $query,
+            $pageCatchall => $pageQuery,
+        ];
+
+        $patched = $service->exposePatchSinglePostRewriteRulesForPostType($rules, $cpt);
+        $expectedRegex = 'events/(?!page(?:/|$)|feed(?:/|$))([^/]+)(?:/([0-9]+))?/?$';
+
+        $this->assertSame(
+            ['events/?$', $expectedRegex, $pageCatchall],
+            array_keys($patched),
+            'Patched single rule must stay before the page catch-all'
+        );
+    }
+
     public function testPatchRewriteRulesArraySkipsPostTypesWithoutArchive(): void
     {
         $service = new TestableCustomPostTypeService();
