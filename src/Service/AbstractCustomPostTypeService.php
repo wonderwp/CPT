@@ -191,8 +191,17 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
                     continue;
                 }
 
-                unset($rules[$regex]);
-                $rules[$newRegex] = $query;
+                // Preserve position: unset()+append would push the rule after WordPress'
+                // page catch-all and break /{archive}/{slug}/ singles (matched as pagename → 404).
+                $reordered = [];
+                foreach ($rules as $existingRegex => $existingQuery) {
+                    if ($existingRegex === $regex) {
+                        $reordered[$newRegex] = $query;
+                        continue;
+                    }
+                    $reordered[$existingRegex] = $existingQuery;
+                }
+                $rules = $reordered;
                 break;
             }
         }
