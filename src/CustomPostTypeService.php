@@ -26,7 +26,7 @@ class CustomPostTypeService extends AbstractCustomPostTypeService
      * @param CustomPostType|null $customPostType
      * @param AbstractManager|null $manager
      */
-    public function __construct(CustomPostType $customPostType = null, AbstractManager $manager = null)
+    public function __construct(?CustomPostType $customPostType = null, ?AbstractManager $manager = null)
     {
         parent::__construct($manager);
         $this->customPostType = $customPostType;
