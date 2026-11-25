@@ -40,3 +40,5 @@ $GLOBALS['wwp_test_actions'] = [];
 $GLOBALS['wwp_test_filters'] = [];
 $GLOBALS['wwp_test_rewrite_rules'] = [];
 $GLOBALS['wwp_test_register_post_type_calls'] = [];
+$GLOBALS['wwp_test_redirects'] = [];
+$GLOBALS['wwp_test_post_meta'] = [];

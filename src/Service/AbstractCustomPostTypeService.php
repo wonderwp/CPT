@@ -4,6 +4,9 @@ namespace WonderWp\Component\CPT\Service;
 
 use WonderWp\Component\CPT\Definition\CustomPostTypeInterface;
 use WonderWp\Component\CPT\Exception\CustomPostTypeRegistrationException;
+use WonderWp\Component\CPT\Locale\LocaleSlugMap;
+use WonderWp\Component\CPT\Locale\LocaleSlugRedirectDecider;
+use WonderWp\Component\CPT\Locale\PostTypeLinkFilter;
 use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponse;
 use WonderWp\Component\CPT\Response\CustomPostTypeRegistrationResponseInterface;
 use WonderWp\Component\Service\Traits\HasAutoloadingCapabilities;
@@ -84,11 +87,30 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
     {
         try {
             $cptOpts = $customPostType->getArgs();
-            if (!empty($cptOpts['rewrite']) && !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs'])) {
-                unset($cptOpts['rewrite']['slugs']);
-                $slugRewriteRules = $this->computeAdditionalSlugsRewriteRules($customPostType);
-                if (!empty($slugRewriteRules)) {
-                    $this->registerAdditionalRewriteRules($slugRewriteRules, 'top');
+            if (!empty($cptOpts['rewrite']) && is_array($cptOpts['rewrite'])) {
+                $localeSlugMap = $this->getLocaleSlugMap($customPostType);
+                $hasAliases    = !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs']);
+
+                if ($localeSlugMap !== null || $hasAliases) {
+                    $slugRewriteRules = $this->computeAdditionalSlugsRewriteRules($customPostType);
+                    if (!empty($slugRewriteRules)) {
+                        $this->registerAdditionalRewriteRules($slugRewriteRules, 'top');
+                    }
+                }
+
+                // Options handled here, unknown to WordPress.
+                unset(
+                    $cptOpts['rewrite']['slugs'],
+                    $cptOpts['rewrite']['locale_slugs'],
+                    $cptOpts['rewrite']['locale_meta'],
+                    $cptOpts['rewrite']['default_locale'],
+                    $cptOpts['rewrite']['redirect_to_locale_slug']
+                );
+
+                if ($localeSlugMap !== null) {
+                    // Stable permastruct: the canonical slug never depends on the request locale.
+                    $cptOpts['rewrite']['slug'] = $localeSlugMap->getDefaultSlug();
+                    $this->registerLocaleSlugHooks($customPostType, $localeSlugMap);
                 }
             }
 
@@ -138,12 +160,143 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
         return $rules;
     }
 
+    //========================================================================================================//
+    // Locale slugs (translatable, flush independent)
+    //========================================================================================================//
+
+    /**
+     * Slug map declared through `rewrite.locale_slugs`, null when the post type does not use it.
+     *
+     * The default locale (canonical slug, fallback for posts without language) is, in this order:
+     * `rewrite.default_locale`, the `wonderwp.customposttype.rewrite.default-locale` filter, `get_locale()`.
+     * Only the last one depends on the request: declare one of the first two for a stable permastruct.
+     */
+    protected function getLocaleSlugMap(CustomPostTypeInterface $customPostType): ?LocaleSlugMap
+    {
+        $cptOpts = $customPostType->getArgs();
+        $rewrite = $cptOpts['rewrite'] ?? null;
+        if (!is_array($rewrite) || empty($rewrite['locale_slugs'])) {
+            return null;
+        }
+
+        $defaultLocale = (string) apply_filters(
+            'wonderwp.customposttype.rewrite.default-locale',
+            (string) ($rewrite['default_locale'] ?? ''),
+            $customPostType
+        );
+        if ($defaultLocale === '') {
+            $defaultLocale = (string) get_locale();
+        }
+
+        return LocaleSlugMap::fromArgs($rewrite, $defaultLocale);
+    }
+
+    protected function registerLocaleSlugHooks(CustomPostTypeInterface $customPostType, LocaleSlugMap $map): void
+    {
+        $rewrite = $customPostType->getArgs()['rewrite'];
+
+        $linkKey = static::class . '::post_type_link::' . $customPostType->getKey();
+        if (empty(self::$rewriteRulesPatchFiltersRegistered[$linkKey])) {
+            $linkFilter = new PostTypeLinkFilter($customPostType->getKey(), $map, (string) ($rewrite['locale_meta'] ?? ''));
+            add_filter('post_type_link', [$linkFilter, 'filter'], 10, 2);
+            self::$rewriteRulesPatchFiltersRegistered[$linkKey] = true;
+        }
+
+        $redirectKey = static::class . '::template_redirect';
+        if (!empty($rewrite['redirect_to_locale_slug']) && empty(self::$rewriteRulesPatchFiltersRegistered[$redirectKey])) {
+            // After the "module unavailable" redirections (priority 10), which exit before us.
+            add_action('template_redirect', [$this, 'maybeRedirectToLocaleSlug'], 20);
+            self::$rewriteRulesPatchFiltersRegistered[$redirectKey] = true;
+        }
+    }
+
+    /**
+     * 301 to the canonical URL of a single post requested with another slug (legacy alias,
+     * slug of another language). The target only depends on the post, so it stays cache friendly.
+     */
+    public function maybeRedirectToLocaleSlug(): void
+    {
+        foreach ($this->customPostTypes as $customPostType) {
+            $target = $this->computeLocaleSlugRedirect($customPostType);
+            if ($target !== null) {
+                wp_safe_redirect($target, 301);
+                $this->terminateRequest();
+
+                return;
+            }
+        }
+    }
+
+    protected function computeLocaleSlugRedirect(CustomPostTypeInterface $customPostType): ?string
+    {
+        $rewrite = $customPostType->getArgs()['rewrite'] ?? null;
+        if (!is_array($rewrite) || empty($rewrite['redirect_to_locale_slug'])) {
+            return null;
+        }
+
+        $map = $this->getLocaleSlugMap($customPostType);
+        if ($map === null) {
+            return null;
+        }
+
+        if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+            return null;
+        }
+
+        $key = $customPostType->getKey();
+        if (!is_singular($key)) {
+            return null;
+        }
+
+        $post = get_queried_object();
+        if (!is_object($post) || ($post->post_type ?? '') !== $key) {
+            return null;
+        }
+
+        $localeMeta = (string) ($rewrite['locale_meta'] ?? '');
+        $postLocale = $localeMeta !== '' ? (string) get_post_meta($post->ID, $localeMeta, true) : '';
+
+        $knownSlugs = $map->getAllSlugs();
+        foreach ((array) ($rewrite['slugs'] ?? []) as $alias) {
+            if (is_string($alias) && sanitize_title($alias) !== '') {
+                $knownSlugs[] = sanitize_title($alias);
+            }
+        }
+
+        $requestPath = (string) ($GLOBALS['wp']->request ?? '');
+        $newPath     = (new LocaleSlugRedirectDecider())->decide(
+            $requestPath,
+            $map->slugFor($postLocale),
+            array_values(array_unique($knownSlugs)),
+            is_preview()
+        );
+        if ($newPath === null) {
+            return null;
+        }
+
+        $url   = user_trailingslashit(home_url('/' . $newPath));
+        $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
+
+        return $query !== '' ? $url . '?' . $query : $url;
+    }
+
+    protected function terminateRequest(): void
+    {
+        exit;
+    }
+
     protected function computeAdditionalSlugsRewriteRules(CustomPostTypeInterface $customPostType): array
     {
         $cptOpts = $customPostType->getArgs();
         $rewriteSlugs = !empty($cptOpts['rewrite']['slugs']) && is_array($cptOpts['rewrite']['slugs'])
             ? $cptOpts['rewrite']['slugs']
             : [];
+
+        // One rule set for every language: what is resolvable never depends on the flushing locale.
+        $localeSlugMap = $this->getLocaleSlugMap($customPostType);
+        if ($localeSlugMap !== null) {
+            $rewriteSlugs = array_values(array_unique(array_merge($localeSlugMap->getAllSlugs(), $rewriteSlugs)));
+        }
 
         if (empty($rewriteSlugs)) {
             return [];
@@ -267,6 +420,13 @@ abstract class AbstractCustomPostTypeService extends AbstractService implements 
 
             if (!empty($cptOpts['rewrite']['slug'])) {
                 $slugs[] = sanitize_title($cptOpts['rewrite']['slug']);
+            }
+
+            $localeSlugMap = $this->getLocaleSlugMap($customPostType);
+            if ($localeSlugMap !== null) {
+                foreach ($localeSlugMap->getAllSlugs() as $localeSlug) {
+                    $slugs[] = $localeSlug;
+                }
             }
         }
 
